@@ -1,0 +1,48 @@
+{
+  "realm": "railway",
+  "enabled": true,
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "railway-app",
+      "name": "Railway App",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:8080/*", "http://localhost:*/*"],
+      "webOrigins": ["*"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administrator — full CRUD access" },
+      { "name": "USER",  "description": "Regular user — view + book tickets" }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@railway.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }],
+      "realmRoles": ["ADMIN", "USER"]
+    },
+    {
+      "username": "user",
+      "email": "user@railway.com",
+      "firstName": "Regular",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "user123", "temporary": false }],
+      "realmRoles": ["USER"]
+    }
+  ]
+}
