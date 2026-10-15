@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  profiles:
+    active: local
   application:
     name: api-gateway
 
@@ -9,8 +11,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Override via env var SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI in Docker
-          issuer-uri: http://localhost:9090/realms/railway
+          # jwk-set-uri is fetched lazily (only when validating a token), so the gateway
+          # starts independently without Keycloak running.
+          # Override via env var SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI in Docker
+          jwk-set-uri: http://localhost:9090/realms/railway/protocol/openid-connect/certs
 
   cloud:
     gateway:
@@ -38,6 +42,11 @@ spring:
           uri: lb://booking-service
           predicates:
             - Path=/api/v1/bookings/**
+
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
 
 eureka:
   client:

@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByBookingNumber(String bookingNumber);
+    Optional<Booking> findBySagaId(String sagaId);
     List<Booking> findByPassengerEmail(String email);
 }

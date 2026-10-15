@@ -1,0 +1,6 @@
+.git
+.vscode
+**/target
+logs
+*.log
+demo-micro-service

@@ -9,11 +9,13 @@ import com.example.railway.route.exception.ResourceNotFoundException;
 import com.example.railway.route.model.Route;
 import com.example.railway.route.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -36,6 +38,7 @@ public class RouteService {
     }
 
     public List<RouteDTO> searchRoutes(String sourceCode, String destinationCode) {
+        log.info("Searching routes: from={} to={}", sourceCode, destinationCode);
         StationDTO source = stationClient.getStationByCode(sourceCode);
         StationDTO destination = stationClient.getStationByCode(destinationCode);
         return routeRepository
@@ -44,7 +47,8 @@ public class RouteService {
     }
 
     public RouteDTO createRoute(RouteDTO dto) {
-        // Validate that train and stations exist in their respective services
+        log.info("Creating route: trainId={} from stationId={} to stationId={}",
+                dto.getTrainId(), dto.getSourceStationId(), dto.getDestinationStationId());
         trainClient.getTrainById(dto.getTrainId());
         stationClient.getStationById(dto.getSourceStationId());
         stationClient.getStationById(dto.getDestinationStationId());
@@ -58,10 +62,13 @@ public class RouteService {
                 .distanceKm(dto.getDistanceKm())
                 .fare(dto.getFare())
                 .build();
-        return toDTO(routeRepository.save(route));
+        RouteDTO result = toDTO(routeRepository.save(route));
+        log.info("Route created: id={}", result.getId());
+        return result;
     }
 
     public RouteDTO updateRoute(Long id, RouteDTO dto) {
+        log.info("Updating route id={}", id);
         Route route = findById(id);
         trainClient.getTrainById(dto.getTrainId());
         stationClient.getStationById(dto.getSourceStationId());
@@ -78,8 +85,10 @@ public class RouteService {
     }
 
     public void deleteRoute(Long id) {
+        log.info("Deleting route id={}", id);
         findById(id);
         routeRepository.deleteById(id);
+        log.info("Route id={} deleted", id);
     }
 
     public Route findById(Long id) {

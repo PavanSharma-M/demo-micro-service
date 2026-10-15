@@ -2,6 +2,8 @@ server:
   port: 8084
 
 spring:
+  profiles:
+    active: local
   application:
     name: booking-service
 
@@ -24,7 +26,22 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/railway
+          # jwk-set-uri is fetched lazily (only when validating a token), so the service
+          # starts independently without Keycloak running.
+          jwk-set-uri: http://localhost:9090/realms/railway/protocol/openid-connect/certs
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: booking-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.example.railway.booking.kafka.event"
 
 eureka:
   client:
@@ -40,11 +57,27 @@ feign:
         connect-timeout: 5000
         read-timeout: 5000
 
+app:
+  kafka:
+    topic:
+      booking-initiated: booking-initiated
+      booking-created: booking-created
+      booking-cancelled: booking-cancelled
+      booking-failed: booking-failed
+      payment-requested: payment-requested
+      payment-completed: payment-completed
+      payment-failed: payment-failed
+      seat-reserved: seat-reserved
+      seat-reservation-failed: seat-reservation-failed
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+logging:
+  config: classpath:logback-spring.xml
 
 springdoc:
   api-docs:

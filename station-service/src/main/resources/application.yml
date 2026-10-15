@@ -2,6 +2,8 @@ server:
   port: 8081
 
 spring:
+  profiles:
+    active: local
   application:
     name: station-service
 
@@ -28,7 +30,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/railway
+          # jwk-set-uri is fetched lazily (only when validating a token), so the service
+          # starts independently without Keycloak running.
+          jwk-set-uri: http://localhost:9090/realms/railway/protocol/openid-connect/certs
 
 eureka:
   client:
@@ -42,6 +46,9 @@ management:
     web:
       exposure:
         include: health,info
+
+logging:
+  config: classpath:logback-spring.xml
 
 springdoc:
   api-docs:

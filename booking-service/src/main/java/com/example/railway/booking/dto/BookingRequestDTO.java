@@ -1,5 +1,6 @@
 package com.example.railway.booking.dto;
 
+import com.example.railway.booking.model.Booking;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -27,4 +28,12 @@ public class BookingRequestDTO {
     @Min(value = 1, message = "Seat count must be at least 1")
     @Max(value = 6, message = "Cannot book more than 6 seats at once")
     private int seatCount;
+
+    @NotNull(message = "Payment method is required")
+    private Booking.PaymentMethod paymentMethod;
+
+    @NotBlank(message = "Payment reference is required")
+    private String paymentReference;
+
+    private String walletProvider;
 }

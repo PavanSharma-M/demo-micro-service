@@ -6,11 +6,13 @@ import com.example.railway.train.exception.ResourceNotFoundException;
 import com.example.railway.train.model.Train;
 import com.example.railway.train.repository.TrainRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,7 +35,9 @@ public class TrainService {
     }
 
     public TrainDTO createTrain(TrainDTO dto) {
+        log.info("Creating train: number={} name={}", dto.getTrainNumber(), dto.getTrainName());
         if (trainRepository.existsByTrainNumber(dto.getTrainNumber())) {
+            log.warn("Duplicate train number: {}", dto.getTrainNumber());
             throw new DuplicateResourceException("Train already exists with number: " + dto.getTrainNumber());
         }
         Train train = Train.builder()
@@ -43,10 +47,13 @@ public class TrainService {
                 .totalSeats(dto.getTotalSeats())
                 .availableSeats(dto.getTotalSeats())
                 .build();
-        return toDTO(trainRepository.save(train));
+        TrainDTO result = toDTO(trainRepository.save(train));
+        log.info("Train created: id={} number={}", result.getId(), result.getTrainNumber());
+        return result;
     }
 
     public TrainDTO updateTrain(Long id, TrainDTO dto) {
+        log.info("Updating train id={}", id);
         Train train = findById(id);
         if (!train.getTrainNumber().equals(dto.getTrainNumber())
                 && trainRepository.existsByTrainNumber(dto.getTrainNumber())) {
@@ -60,8 +67,10 @@ public class TrainService {
     }
 
     public void deleteTrain(Long id) {
+        log.info("Deleting train id={}", id);
         findById(id);
         trainRepository.deleteById(id);
+        log.info("Train id={} deleted", id);
     }
 
     /**
@@ -70,9 +79,12 @@ public class TrainService {
      * Negative delta = reserving seats (booking).
      */
     public TrainDTO updateAvailableSeats(Long id, int delta) {
+        log.info("Updating seats for trainId={} delta={}", id, delta);
         Train train = findById(id);
         int updated = train.getAvailableSeats() + delta;
         if (updated < 0) {
+            log.warn("Seat update rejected: trainId={} available={} requested={}",
+                    id, train.getAvailableSeats(), Math.abs(delta));
             throw new IllegalArgumentException(
                     "Not enough seats. Available: " + train.getAvailableSeats() + ", requested: " + Math.abs(delta));
         }
@@ -80,7 +92,9 @@ public class TrainService {
             updated = train.getTotalSeats();
         }
         train.setAvailableSeats(updated);
-        return toDTO(trainRepository.save(train));
+        TrainDTO result = toDTO(trainRepository.save(train));
+        log.info("Seats updated for trainId={}: availableSeats={}", id, result.getAvailableSeats());
+        return result;
     }
 
     private Train findById(Long id) {

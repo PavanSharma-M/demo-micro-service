@@ -6,11 +6,13 @@ import com.example.railway.station.exception.ResourceNotFoundException;
 import com.example.railway.station.model.Station;
 import com.example.railway.station.repository.StationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -32,7 +34,9 @@ public class StationService {
     }
 
     public StationDTO createStation(StationDTO dto) {
+        log.info("Creating station: code={} name={}", dto.getStationCode(), dto.getStationName());
         if (stationRepository.existsByStationCode(dto.getStationCode())) {
+            log.warn("Duplicate station code: {}", dto.getStationCode());
             throw new DuplicateResourceException("Station already exists with code: " + dto.getStationCode());
         }
         Station station = Station.builder()
@@ -41,10 +45,13 @@ public class StationService {
                 .city(dto.getCity())
                 .state(dto.getState())
                 .build();
-        return toDTO(stationRepository.save(station));
+        StationDTO result = toDTO(stationRepository.save(station));
+        log.info("Station created: id={} code={}", result.getId(), result.getStationCode());
+        return result;
     }
 
     public StationDTO updateStation(Long id, StationDTO dto) {
+        log.info("Updating station id={}", id);
         Station station = findById(id);
         if (!station.getStationCode().equals(dto.getStationCode())
                 && stationRepository.existsByStationCode(dto.getStationCode())) {
@@ -58,8 +65,10 @@ public class StationService {
     }
 
     public void deleteStation(Long id) {
+        log.info("Deleting station id={}", id);
         findById(id);
         stationRepository.deleteById(id);
+        log.info("Station id={} deleted", id);
     }
 
     private Station findById(Long id) {

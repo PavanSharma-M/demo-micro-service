@@ -28,5 +28,10 @@ public class BookingResponseDTO {
     private int seatCount;
     private LocalDateTime bookingDate;
     private Booking.BookingStatus status;
+    private Booking.PaymentMethod paymentMethod;
+    private Booking.PaymentStatus paymentStatus;
+    private String paymentReference;
+    private String paymentTransactionId;
     private BigDecimal totalAmount;
+    private String failureReason;
 }

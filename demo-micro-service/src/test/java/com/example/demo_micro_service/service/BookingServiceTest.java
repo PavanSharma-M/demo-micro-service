@@ -4,6 +4,7 @@ import com.example.demo_micro_service.dto.BookingRequestDTO;
 import com.example.demo_micro_service.dto.BookingResponseDTO;
 import com.example.demo_micro_service.exception.BookingException;
 import com.example.demo_micro_service.exception.ResourceNotFoundException;
+import com.example.demo_micro_service.kafka.producer.BookingEventProducer;
 import com.example.demo_micro_service.model.Booking;
 import com.example.demo_micro_service.model.Route;
 import com.example.demo_micro_service.model.Station;
@@ -36,6 +37,9 @@ class BookingServiceTest {
 
     @Mock
     private TrainRepository trainRepository;
+
+    @Mock
+    private BookingEventProducer bookingEventProducer;
 
     @InjectMocks
     private BookingService bookingService;
@@ -85,7 +89,7 @@ class BookingServiceTest {
     // ---- createBooking ----
 
     @Test
-    void createBooking_sufficientSeats_createsConfirmedBooking() {
+    void createBooking_sufficientSeats_createsPendingBooking() {
         Route route = buildRoute(50, BigDecimal.valueOf(500));
         BookingRequestDTO request = BookingRequestDTO.builder()
                 .routeId(1L)
@@ -96,7 +100,6 @@ class BookingServiceTest {
                 .build();
 
         given(routeService.findById(1L)).willReturn(route);
-        given(trainRepository.save(any(Train.class))).willAnswer(inv -> inv.getArgument(0));
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> {
             Booking b = inv.getArgument(0);
             return Booking.builder()
@@ -117,17 +120,17 @@ class BookingServiceTest {
 
         assertThat(result.getId()).isEqualTo(10L);
         assertThat(result.getPassengerName()).isEqualTo("John Doe");
-        assertThat(result.getStatus()).isEqualTo(Booking.BookingStatus.CONFIRMED);
+        assertThat(result.getStatus()).isEqualTo(Booking.BookingStatus.PENDING);
         assertThat(result.getSeatCount()).isEqualTo(2);
         // totalAmount = 500 fare × 2 seats
         assertThat(result.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
-        // availableSeats should have been decremented
-        assertThat(route.getTrain().getAvailableSeats()).isEqualTo(48);
-        then(trainRepository).should().save(route.getTrain());
+        // Seat reservation is performed asynchronously by the saga.
+        assertThat(route.getTrain().getAvailableSeats()).isEqualTo(50);
+        then(bookingEventProducer).should().publishBookingInitiated(any());
     }
 
     @Test
-    void createBooking_insufficientSeats_throwsBookingException() {
+    void createBooking_insufficientSeats_startsSagaWithoutReservingSeats() {
         Route route = buildRoute(1, BigDecimal.valueOf(500));
         BookingRequestDTO request = BookingRequestDTO.builder()
                 .routeId(1L)
@@ -138,10 +141,13 @@ class BookingServiceTest {
                 .build();
 
         given(routeService.findById(1L)).willReturn(route);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
-        assertThatThrownBy(() -> bookingService.createBooking(request))
-                .isInstanceOf(BookingException.class)
-                .hasMessageContaining("Not enough seats");
+        BookingResponseDTO result = bookingService.createBooking(request);
+
+        assertThat(result.getStatus()).isEqualTo(Booking.BookingStatus.PENDING);
+        assertThat(route.getTrain().getAvailableSeats()).isEqualTo(1);
+        then(bookingEventProducer).should().publishBookingInitiated(any());
     }
 
     @Test
@@ -156,7 +162,6 @@ class BookingServiceTest {
                 .build();
 
         given(routeService.findById(1L)).willReturn(route);
-        given(trainRepository.save(any(Train.class))).willAnswer(inv -> inv.getArgument(0));
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> {
             Booking b = inv.getArgument(0);
             return Booking.builder()
@@ -170,7 +175,8 @@ class BookingServiceTest {
         BookingResponseDTO result = bookingService.createBooking(request);
 
         assertThat(result.getSeatCount()).isEqualTo(3);
-        assertThat(route.getTrain().getAvailableSeats()).isEqualTo(0);
+        assertThat(result.getStatus()).isEqualTo(Booking.BookingStatus.PENDING);
+        assertThat(route.getTrain().getAvailableSeats()).isEqualTo(3);
     }
 
     // ---- getBookingById ----

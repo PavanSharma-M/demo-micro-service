@@ -1,0 +1,11 @@
+
+# Disable Keycloak JWT validation in local profile (no Keycloak required)
+# The jwk-set-uri below is ignored because LocalSecurityConfig permits all requests.
+
+eureka:
+  client:
+    enabled: true
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true

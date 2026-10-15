@@ -27,9 +27,17 @@ public class Booking {
     @Column(unique = true, nullable = false)
     private String bookingNumber;
 
+    /** Saga correlation ID = bookingNumber, used to match Kafka reply events. */
+    @Column(unique = true)
+    private String sagaId;
+
     /** ID of the route in route-service */
     @Column(nullable = false)
     private Long routeId;
+
+    /** ID of the train used for seat reservation and compensation. */
+    @Column(nullable = false)
+    private Long trainId;
 
     @NotBlank(message = "Passenger name is required")
     private String passengerName;
@@ -51,10 +59,39 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus paymentStatus;
+
+    @Column(length = 100)
+    private String walletProvider;
+
+    @Column(length = 100)
+    private String paymentReference;
+
+    @Column(length = 50)
+    private String paymentTransactionId;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    /** Populated when saga compensation fires (booking fails). */
+    @Column(length = 500)
+    private String failureReason;
+
     public enum BookingStatus {
-        CONFIRMED, CANCELLED
+        PENDING, CONFIRMED, CANCELLED, FAILED
+    }
+
+    public enum PaymentMethod {
+        UPI, CREDIT_CARD, WALLET
+    }
+
+    public enum PaymentStatus {
+        PENDING, PROCESSING, PAID, FAILED
     }
 }

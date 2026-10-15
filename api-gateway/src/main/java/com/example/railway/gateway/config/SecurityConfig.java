@@ -2,6 +2,7 @@ package com.example.railway.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 
+@Profile("!local")
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
@@ -33,6 +35,9 @@ public class SecurityConfig {
                         // Bookings POST/PATCH: users and admins can book & cancel
                         .pathMatchers(HttpMethod.POST, "/api/v1/bookings/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/bookings/**").hasAnyRole("USER", "ADMIN")
+                        // Orders POST/PATCH: users and admins can create and track shipment state
+                        .pathMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyRole("USER", "ADMIN")
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/orders/**").hasAnyRole("USER", "ADMIN")
                         // Everything else (POST/PUT/DELETE on trains, stations, routes) → ADMIN only
                         .anyExchange().hasRole("ADMIN")
                 )
